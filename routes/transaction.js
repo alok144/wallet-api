@@ -4,9 +4,9 @@ const router = express.Router();
 const Transaction = require("../models/transaction");
 const Wallet = require("../models/wallet");
 
-router.post("/add/:walletId", async (req, res) => {
+router.post("/:walletId", async (req, res) => {
   const walletId = req.params.walletId;
-  const { amount, type } = req.body;
+  const { amount, type, description } = req.body;
 
   const walletDetails = await Wallet.findOne({ _id: walletId });
   let balance = walletDetails?.balance;
@@ -21,9 +21,10 @@ router.post("/add/:walletId", async (req, res) => {
     await walletDetails.save();
   }
   let transaction = new Transaction({
-    amount,
+    amount: parseFloat(amount).toFixed(4),
     type,
-    balance: walletDetails.balance,
+    description,
+    balance: walletDetails.balance?.toFixed(4),
     walletId,
   });
 
@@ -31,10 +32,17 @@ router.post("/add/:walletId", async (req, res) => {
 
   if (!transaction)
     return res.status(400).send("Transaction cannot be created");
-  res.send(transaction);
+res
+    .status(200)
+    .json({
+      success: true,
+      message: "Transaction executed successfully",
+      data: transaction.toObject(),
+    });
+
 });
 
-router.get("/all/:walletId", async (req, res) => {
+router.get("/:walletId", async (req, res) => {
   const limit = 10;
   const currentPage = req.query?.currentPage;
   const sortBy = req.query?.sortBy;
@@ -57,7 +65,14 @@ router.get("/all/:walletId", async (req, res) => {
   if (!transactionList) {
     res.status(500).json({ success: false });
   }
-  res.send({ transactionList, totalCount });
+
+  res
+    .status(200)
+    .json({
+      success: true,
+      message: "Transactions fetched successfully",
+      data: { transactionList, totalCount },
+    });
 });
 
 module.exports = router;
